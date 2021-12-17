@@ -72,10 +72,10 @@ class GraphTransformer:
         for model_dict in model.models:
             self.fq_insertion.ignored_params = ignored_params_[model_dict['name']] if model.is_cascade \
                 else ignored_params_
-            self._insert_fake_quantize(model_dict['model'])
+            # self._insert_fake_quantize(model_dict['model'])
             # TODO: Uncomment to enable subgraphs quantization
-            # from mo.middle.pattern_match import for_graph_and_each_sub_graph_recursively
-            # for_graph_and_each_sub_graph_recursively(model_dict['model'], self._insert_fake_quantize)
+            from openvino.tools.mo.middle.pattern_match import for_graph_and_each_sub_graph_recursively
+            for_graph_and_each_sub_graph_recursively(model_dict['model'], self._insert_fake_quantize)
             add_fullname_for_nodes(model_dict['model'])
         return model
 
