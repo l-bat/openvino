@@ -50,6 +50,7 @@ def get_common_argument_parser():
 
     parser.add_argument(
         '--engine',
+        default='simplified'
         choices=['accuracy_checker', 'data_free', 'simplified'],
         type=str,
         help='Engine type. Default: `accuracy_checker`')
@@ -138,10 +139,9 @@ def get_common_argument_parser():
 
     data_free_opt.add_argument(
         '--generate-data',
-        action='store_true',
-        default=False,
-        help='If specified, generate synthetic data and store to `data-source`. '
-             'Otherwise, the dataset from `--data-source` will be used')
+        action='store_false',
+        help='Generate synthetic dataset on first run and store to `dataset-dir`. '
+             'If not specified, the dataset from `--data-source` will be used')
 
     return parser
 
