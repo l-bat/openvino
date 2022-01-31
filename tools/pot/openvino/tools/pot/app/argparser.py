@@ -50,7 +50,7 @@ def get_common_argument_parser():
 
     parser.add_argument(
         '--engine',
-        default='simplified'
+        default='data_free',
         choices=['accuracy_checker', 'data_free', 'simplified'],
         type=str,
         help='Engine type. Default: `accuracy_checker`')
