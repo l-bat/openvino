@@ -18,7 +18,7 @@ Post-training quantization is a basic feature of the POT and it has lots of knob
 quantized model. However, as a starting point we suggest using the `DefaultQuantization` algorithm with default settings.
 In many cases it leads to satisfied accuracy and performance speedup. 
 
-A fragment of the configuration file (`config/default_quantization_template.json` in the POT directory) with default settings is shown below:
+A fragment of the configuration file (`openvino/tools/pot/configs/templates/default_quantization_template.json` in the POT directory) with default settings is shown below:
 ```
 "compression": {
   "target_device": "ANY", // Target device, the specificity of which will be taken into account during optimization.
@@ -92,7 +92,7 @@ In case when the steps above do not lead to the accurate quantized model you may
 The whole idea behind that is to revert quantized layers back to floating-point precision based on their contribution to the accuracy drop until the desired accuracy degradation with respect to
 the full-precision model is satisfied.
 
-A fragment of the configuration file with default settings is shown below (`configs/accuracy_aware_quantization_template.json`):
+A fragment of the configuration file with default settings is shown below (`openvino/tools/pot/configs/templates/accuracy_aware_quantization_template.json`):
 ```
 "compression": {
         "target_device": "ANY", // Target device, the specificity of which will be taken into account during optimization.
