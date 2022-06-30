@@ -26,6 +26,7 @@ public:
     bool created() const override;
     void createDescriptor(const std::vector<MemoryDescPtr>& inputDesc,
                           const std::vector<MemoryDescPtr>& outputDesc) override;
+    std::shared_ptr<dnnl::primitive_attr> initPrimitiveAttr() override;
 
     void execute(dnnl::stream strm) override;
 
@@ -120,6 +121,10 @@ private:
     static constexpr size_t batchDimDummyValue = 64lu;
 
     bool wasMemoryPrepared = false;
+
+    float inputScale    = 0.f;
+    float inputShift    = 0.f;
+    std::vector<float> weightsScales;
 };
 
 }   // namespace node
