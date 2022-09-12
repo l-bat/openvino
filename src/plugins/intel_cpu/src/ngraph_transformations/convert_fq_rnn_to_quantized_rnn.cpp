@@ -58,8 +58,8 @@ ov::intel_cpu::ConvertFqRnnToQuantizedRnn::ConvertFqRnnToQuantizedRnn() {
             H_as_const
         });
 
-    auto cell_state_m = ngraph::pattern::any_input(); // for LSTMCell
-    auto sequence_length_m = ngraph::pattern::any_input(); // for LSTMCell
+    auto cell_state_m = ngraph::pattern::any_input(); // for LSTM
+    auto sequence_length_m = ngraph::pattern::any_input(); // for Sequences
 
     auto W_m = ngraph::pattern::wrap_type<ngraph::op::Constant>();
     auto convert_W = ngraph::pattern::wrap_type<ngraph::op::Convert>({W_m});
@@ -73,16 +73,12 @@ ov::intel_cpu::ConvertFqRnnToQuantizedRnn::ConvertFqRnnToQuantizedRnn() {
 
     const auto B_m = ngraph::pattern::wrap_type<ngraph::opset8::Constant>();
 
-    auto lstm_cell_m = ngraph::pattern::wrap_type<ngraph::opset8::LSTMCell>    ({deq_X, H_in, cell_state_m,                    deq_W, deq_R, B_m});
     auto lstm_seq_m  = ngraph::pattern::wrap_type<ngraph::opset8::LSTMSequence>({deq_X, H_in, cell_state_m, sequence_length_m, deq_W, deq_R, B_m});
-    auto gru_cell_m  = ngraph::pattern::wrap_type<ngraph::opset8::GRUCell>     ({deq_X, H_in,                                  deq_W, deq_R, B_m});
     auto gru_seq_m   = ngraph::pattern::wrap_type<ngraph::opset8::GRUSequence> ({deq_X, H_in,               sequence_length_m, deq_W, deq_R, B_m});
 
     auto rnn_pattern = std::make_shared<ngraph::pattern::op::Or>(
         OutputVector {
-            lstm_cell_m,
             lstm_seq_m,
-            gru_cell_m,
             gru_seq_m
         });
 
@@ -109,27 +105,7 @@ ov::intel_cpu::ConvertFqRnnToQuantizedRnn::ConvertFqRnnToQuantizedRnn() {
 
         std::shared_ptr<ngraph::Node> rnn_quantized;
 
-        if (const auto lstm_cell = ngraph::as_type_ptr<ngraph::opset8::LSTMCell>(rnn)) {
-            const auto& cell_state = pattern_map.at(cell_state_m);
-
-            auto rnn_quantized_tr = std::make_shared<ngraph::op::TypeRelaxed<ngraph::opset8::LSTMCell>>(
-                element::TypeVector{ element::f32, element::f32, element::f32, element::f32, element::f32, element::f32 },
-                element::TypeVector{ element::f32, element::f32 },
-                ngraph::op::TemporaryReplaceOutputType(activation, element::f32).get(),
-                ngraph::op::TemporaryReplaceOutputType(hidden_state, element::f32).get(),
-                ngraph::op::TemporaryReplaceOutputType(cell_state, element::f32).get(),
-                ngraph::op::TemporaryReplaceOutputType(weights, element::f32).get(),
-                ngraph::op::TemporaryReplaceOutputType(r_weights, element::f32).get(),
-                ngraph::op::TemporaryReplaceOutputType(bias, element::f32).get(),
-                lstm_cell->get_hidden_size(),
-                lstm_cell->get_activations(),
-                lstm_cell->get_activations_alpha(),
-                lstm_cell->get_activations_beta(),
-                lstm_cell->get_clip());
-
-            rnn_quantized_tr->set_overridden_output_type(hidden_state.get_element_type(), 1);
-            rnn_quantized = rnn_quantized_tr;
-        } else if (const auto lstm_seq = ngraph::as_type_ptr<ngraph::opset8::LSTMSequence>(rnn)) {
+        if (const auto lstm_seq = ngraph::as_type_ptr<ngraph::opset8::LSTMSequence>(rnn)) {
             const auto& cell_state = pattern_map.at(cell_state_m);
             const auto& sequence_length = pattern_map.at(sequence_length_m);
 
@@ -150,24 +126,6 @@ ov::intel_cpu::ConvertFqRnnToQuantizedRnn::ConvertFqRnnToQuantizedRnn() {
                 lstm_seq->get_activations_beta(),
                 lstm_seq->get_activations(),
                 lstm_seq->get_clip());
-
-            rnn_quantized_tr->set_overridden_output_type(hidden_state.get_element_type(), 1);
-            rnn_quantized = rnn_quantized_tr;
-        } else if (const auto gru_cell = ngraph::as_type_ptr<ngraph::opset8::GRUCell>(rnn)) {
-            auto rnn_quantized_tr = std::make_shared<ngraph::op::TypeRelaxed<ngraph::opset8::GRUCell>>(
-                std::vector<ngraph::element::Type>{ element::f32, element::f32, element::f32, element::f32, element::f32 },
-                std::vector<ngraph::element::Type>{ element::f32 },
-                ngraph::op::TemporaryReplaceOutputType(activation, element::f32).get(),
-                ngraph::op::TemporaryReplaceOutputType(hidden_state, element::f32).get(),
-                ngraph::op::TemporaryReplaceOutputType(weights, element::f32).get(),
-                ngraph::op::TemporaryReplaceOutputType(r_weights, element::f32).get(),
-                ngraph::op::TemporaryReplaceOutputType(bias, element::f32).get(),
-                gru_cell->get_hidden_size(),
-                gru_cell->get_activations(),
-                gru_cell->get_activations_alpha(),
-                gru_cell->get_activations_beta(),
-                gru_cell->get_clip(),
-                gru_cell->get_linear_before_reset());
 
             rnn_quantized_tr->set_overridden_output_type(hidden_state.get_element_type(), 1);
             rnn_quantized = rnn_quantized_tr;
@@ -238,7 +196,7 @@ ov::intel_cpu::ConvertFqRnnToQuantizedRnn::ConvertFqRnnToQuantizedRnn() {
          * H(u8,i8) -> dequantize -> RNN
          * dequantize has to be inserted after H output port since
          * oneDNN supports only equal data types on H in/out ports
-         * either: u8u8 or f32f32 */
+         * either: u8u8, i8i8 or f32f32 */
         if (hidden_state_it != pattern_map.end()) {
             const auto& convert  = pattern_map.at(convert_H).get_node_shared_ptr();
             const auto  subtract_it = pattern_map.find(subtract_H);

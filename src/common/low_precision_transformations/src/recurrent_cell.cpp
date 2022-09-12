@@ -66,12 +66,8 @@ RecurrentCellTransformation::RecurrentCellTransformation(const Params& params) :
             fq_R, dequantization_R, dequantization_without_subtract_R
         });
 
-    const auto lstm_cell = ngraph::pattern::wrap_type<ngraph::opset5::LSTMCell>(
-        {X_in, H_in, C,    W_in, R_in, B});
     const auto lstm_seq = ngraph::pattern::wrap_type<ngraph::opset5::LSTMSequence>(
         {X_in, H_in, C, S, W_in, R_in, B});
-    const auto gru_cell = ngraph::pattern::wrap_type<ngraph::opset5::GRUCell>(
-        {X_in, H_in,       W_in, R_in, B});
     const auto gru_seq  = ngraph::pattern::wrap_type<ngraph::opset5::GRUSequence>(
         {X_in, H_in,    S, W_in, R_in, B});
 
@@ -85,10 +81,11 @@ RecurrentCellTransformation::RecurrentCellTransformation(const Params& params) :
     };
 
     auto m = std::make_shared<ngraph::pattern::Matcher>(
-        std::make_shared<pattern::op::Or>(OutputVector{lstm_cell,
-                                                       lstm_seq,
-                                                       gru_cell,
-                                                       gru_seq}),
+        std::make_shared<pattern::op::Or>(
+            OutputVector {
+                lstm_seq,
+                gru_seq
+            }),
         "RecurrentCellTransformation");
 
     this->register_matcher(m, callback);
@@ -145,13 +142,11 @@ bool RecurrentCellTransformation::canBeTransformed(const TransformationContext& 
     if (is_type<opset5::LSTMSequence>(lstm)) {
         W = lstm->get_input_node_shared_ptr(4);
         R = lstm->get_input_node_shared_ptr(5);
-    } else if (is_type<opset5::LSTMCell>(lstm) ||
-               is_type<opset5::GRUSequence>(lstm)) {
+    } else if (is_type<opset5::GRUSequence>(lstm)) {
         W = lstm->get_input_node_shared_ptr(3);
         R = lstm->get_input_node_shared_ptr(4);
     } else {
-        W = lstm->get_input_node_shared_ptr(2);
-        R = lstm->get_input_node_shared_ptr(3);
+        THROW_TRANSFORMATION_EXCEPTION << "Unexpected Operation type " << lstm;
     }
 
     for (auto fq_on_weight : {W, R}) {
