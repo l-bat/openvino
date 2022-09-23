@@ -8,11 +8,13 @@ from openvino.tools.mo import mo
 
 TEST_ROOT = Path(__file__).parent.parent.absolute()
 LIBS_ROOT = Path(__file__).resolve().parents[4] / 'thirdparty'
+POT_ROOT = Path(__file__).resolve().parents[2] / 'openvino' / 'tools' / 'pot'
 MO_PATH = Path(mo.__file__).parent
 
 MODELS_PATH = TEST_ROOT / 'data' / 'models'
 REFERENCE_MODELS_PATH = TEST_ROOT / 'data' / 'reference_models'
-HARDWARE_CONFIG_PATH = TEST_ROOT / 'data' / 'hardware_configs'
+HARDWARE_CONFIG_PATH = POT_ROOT / 'configs' / 'hardware'
+TESTS_HARDWARE_CONFIG_PATH = TEST_ROOT / 'data' / 'hardware_configs'
 HARDWARE_CONFIG_REFERENCE_PATH = HARDWARE_CONFIG_PATH / 'reference'
 
 TOOL_CONFIG_PATH = TEST_ROOT / 'data' / 'tool_configs'

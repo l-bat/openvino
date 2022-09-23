@@ -14,7 +14,7 @@ from openvino.tools.pot.configs.hardware_config import HardwareConfig
 from openvino.tools.pot.configs.config import Config
 from openvino.tools.pot.algorithms.quantization.fake_quantize_configuration import get_configurations_by_preset
 from .utils.config import provide_dataset_path
-from .utils.path import HARDWARE_CONFIG_PATH, HARDWARE_CONFIG_REFERENCE_PATH, \
+from .utils.path import TESTS_HARDWARE_CONFIG_PATH, HARDWARE_CONFIG_REFERENCE_PATH, \
     TOOL_CONFIG_PATH, INTERMEDIATE_CONFIG_PATH
 
 
@@ -48,7 +48,7 @@ PRESETS = [
     ids=['{}_config'.format(os.path.splitext(c)[0]) for c in HW_CONFIG_NAME]
 )
 def test_load_hardware_config(hw_config_name):
-    hw_config_path = HARDWARE_CONFIG_PATH.joinpath(hw_config_name).as_posix()
+    hw_config_path = TESTS_HARDWARE_CONFIG_PATH.joinpath(hw_config_name).as_posix()
     hw_config = HardwareConfig.from_json(hw_config_path)
     check_hardware_config(hw_config, hw_config_name)
 
@@ -93,7 +93,7 @@ def test_configurations_by_preset(preset):
         'preset': preset,
         'target_device': 'CPU'
     })
-    hw_config_path = HARDWARE_CONFIG_PATH.joinpath('cpu.json').as_posix()
+    hw_config_path = TESTS_HARDWARE_CONFIG_PATH.joinpath('cpu.json').as_posix()
     hw_config = HardwareConfig.from_json(hw_config_path)
     correct_configuration = _load_config('correct_configuration.json')
     res = get_configurations_by_preset(config, None, correct_configuration, hw_config)
